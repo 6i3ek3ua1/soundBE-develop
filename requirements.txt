@@ -1,0 +1,6 @@
+git+https://github.com/About-to-break/toolbox.git
+
+sounddevice~=0.5.3
+numpy~=2.3.5
+pyfiglet~=1.0.4
+whisper~=1.1.10
