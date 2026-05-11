@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoundBE - Тест</title>
+</head>
+<body>
+    <h1>SoundBE - Тест Eel</h1>
+    <button id="testBtn">Тест get_audio_devices</button>
+    <div id="result"></div>
+
+    <script type="text/javascript" src="/eel.js"></script>
+    <script>
+        console.log('Page loaded');
+
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            console.log('Button clicked');
+            const result = document.getElementById('result');
+            result.textContent = 'Загрузка...';
+
+            try {
+                console.log('Calling eel.get_audio_devices()...');
+                const devices = await eel.get_audio_devices();
+                console.log('Devices:', devices);
+                result.textContent = 'Устройства: ' + JSON.stringify(devices);
+            } catch (error) {
+                console.error('Error:', error);
+                result.textContent = 'Ошибка: ' + error;
+            }
+        });
+
+        // Test Eel availability
+        setTimeout(() => {
+            console.log('Eel available:', typeof eel !== 'undefined');
+        }, 1000);
+    </script>
+</body>
+</html>

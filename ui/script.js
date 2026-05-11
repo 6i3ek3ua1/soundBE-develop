@@ -4,26 +4,58 @@ let history = [];
 
 // Initialize Eel
 if (typeof eel !== 'undefined') {
+    console.log('Eel is available');
     eel.expose(onTextRecognized);
     eel.expose(onTextTranslated);
     eel.expose(onSystemStatus);
     eel.expose(onError);
+} else {
+    console.error('Eel is not available!');
 }
 
 // On page load
 document.addEventListener('DOMContentLoaded', function() {
-    loadSystemStatus();
-    loadDeviceList();
+    console.log('Page loaded, initializing...');
+
+    // Wait for Eel to be ready
+    if (typeof eel !== 'undefined') {
+        console.log('Eel is ready, loading data...');
+        loadSystemStatus();
+        loadDeviceList();
+    } else {
+        console.log('Eel not ready, waiting...');
+        // Wait for Eel to load
+        let attempts = 0;
+        const checkEel = setInterval(() => {
+            attempts++;
+            console.log(`Checking Eel availability (attempt ${attempts})...`);
+            if (typeof eel !== 'undefined') {
+                console.log('Eel became available!');
+                clearInterval(checkEel);
+                loadSystemStatus();
+                loadDeviceList();
+            } else if (attempts > 50) { // 5 seconds
+                console.error('Eel failed to load after 5 seconds');
+                clearInterval(checkEel);
+            }
+        }, 100);
+    }
 });
 
 // Start Capture
 async function startCapture() {
+    console.log('Starting capture...');
     try {
         const device = document.getElementById('deviceSelect').value;
         const deviceIdx = device ? parseInt(device) : null;
+        console.log('Selected device:', device, 'index:', deviceIdx);
 
         if (typeof eel !== 'undefined') {
+            console.log('Calling eel.start_capture()...');
             await eel.start_capture(deviceIdx);
+            console.log('Capture started successfully');
+        } else {
+            console.error('Eel not available for start capture');
         }
 
         systemRunning = true;
@@ -36,9 +68,14 @@ async function startCapture() {
 
 // Stop Capture
 async function stopCapture() {
+    console.log('Stopping capture...');
     try {
         if (typeof eel !== 'undefined') {
+            console.log('Calling eel.stop_capture()...');
             await eel.stop_capture();
+            console.log('Capture stopped successfully');
+        } else {
+            console.error('Eel not available for stop capture');
         }
 
         systemRunning = false;
@@ -69,9 +106,12 @@ async function loadSystemStatus() {
 
 // Load Device List
 async function loadDeviceList() {
+    console.log('Loading device list...');
     if (typeof eel !== 'undefined') {
         try {
+            console.log('Calling eel.get_audio_devices()...');
             const devices = await eel.get_audio_devices();
+            console.log('Devices received:', devices);
             const select = document.getElementById('deviceSelect');
 
             devices.forEach((device, idx) => {
@@ -80,9 +120,12 @@ async function loadDeviceList() {
                 option.textContent = device;
                 select.appendChild(option);
             });
+            console.log('Device list loaded successfully');
         } catch (error) {
             console.error('Error loading devices:', error);
         }
+    } else {
+        console.error('Eel not available for device loading');
     }
 }
 

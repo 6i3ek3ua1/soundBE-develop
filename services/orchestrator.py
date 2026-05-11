@@ -75,11 +75,13 @@ class SystemOrchestrator:
         )
 
         if translation_enabled:
+            use_vllm = str(getattr(self.config, "USE_VLLM", "false")).lower() == "true"
             self.translation_service = TranslationService(
                 model_name=translation_model,
                 target_language=target_lang,
                 logger=self.logger,
                 use_gpu=True,
+                use_vllm=use_vllm,
             )
             self.logger.info("Translation service initialized")
         else:

@@ -112,8 +112,9 @@ class UIController:
 
     def start_capture(self, device_idx: Optional[int] = None):
         """Запустить захват аудио"""
+        logging.info(f"start_capture() called with device_idx: {device_idx}")
         if self.orchestrator is None:
-            self.logger.error("Orchestrator not available")
+            logging.error("Orchestrator not available")
             return False
 
         try:
@@ -123,22 +124,25 @@ class UIController:
                 daemon=False,
                 name="OrchestratorThread",
             ).start()
+            logging.info("Capture started successfully")
             return True
         except Exception as e:
-            self.logger.exception(f"Error starting capture: {e}")
+            logging.exception(f"Error starting capture: {e}")
             return False
 
     def stop_capture(self):
         """Остановить захват аудио"""
+        logging.info("stop_capture() called")
         if self.orchestrator is None:
-            self.logger.error("Orchestrator not available")
+            logging.error("Orchestrator not available")
             return False
 
         try:
             self.orchestrator.stop()
+            logging.info("Capture stopped successfully")
             return True
         except Exception as e:
-            self.logger.exception(f"Error stopping capture: {e}")
+            logging.exception(f"Error stopping capture: {e}")
             return False
 
     def get_system_status(self) -> Dict[str, Any]:
@@ -162,23 +166,26 @@ class UIController:
     @staticmethod
     def get_audio_devices() -> List[str]:
         """Получить список аудиоустройств"""
+        logging.info("get_audio_devices() called")
         try:
             devices = sd.query_devices()
+            logging.info(f"Found {len(devices)} audio devices")
             device_names = []
 
             for idx, dev in enumerate(devices):
                 if dev["max_input_channels"] > 0:
-                    device_names.append(
-                        f"{idx}: {dev['name']} ({dev['max_input_channels']}ch)"
-                    )
+                    device_name = f"{idx}: {dev['name']} ({dev['max_input_channels']}ch)"
+                    device_names.append(device_name)
+                    logging.debug(f"Device {idx}: {device_name}")
 
+            logging.info(f"Returning {len(device_names)} input devices")
             return device_names
 
         except Exception as e:
             logging.error(f"Error querying devices: {e}")
             return []
 
-    def start(self, debug: bool = False, port: int = 8000):
+    def start(self, port: int = 8000):
         """Запустить Eel веб-интерфейс"""
         if self.eel is None:
             self.logger.error("Eel not available")
@@ -191,9 +198,8 @@ class UIController:
             self.logger.info(f"Starting Eel UI on port {port}...")
             self.eel.start(
                 "index.html",
-                mode="chrome",
+                mode="chrome-app",
                 port=port,
-                debug=debug,
             )
 
         except Exception as e:

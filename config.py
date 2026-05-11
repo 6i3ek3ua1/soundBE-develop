@@ -5,6 +5,16 @@ from types import SimpleNamespace
 def load_config(init_file=".init") -> SimpleNamespace:
     config_vars = {}
 
+    # Значения по умолчанию
+    defaults = {
+        "LOG_LEVEL": "INFO",
+        "UI_PORT": "8000",
+        "AUDIO_DEVICE": "",
+        "TRANSLATION_MODEL": "Qwen/Qwen2-4B-Instruct",
+        "TTS_LANGUAGE": "en",
+        "USE_VLLM": "false",
+    }
+
     if os.path.exists(init_file):
         with open(init_file, "r", encoding="utf-8") as f:
             for line in f:
@@ -15,6 +25,11 @@ def load_config(init_file=".init") -> SimpleNamespace:
                 if "=" in line:
                     key, value = line.split("=", 1)
                     config_vars[key.strip()] = value.strip()
+
+    # Применяем значения по умолчанию, если не заданы
+    for key, default_value in defaults.items():
+        if key not in config_vars:
+            config_vars[key] = default_value
 
     for key, value in os.environ.items():
         if key not in config_vars:

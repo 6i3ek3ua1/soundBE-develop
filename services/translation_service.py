@@ -5,15 +5,16 @@ import time
 
 
 class TranslationService:
-    """Сервис перевода текста с использованием vLLM + Qwen3-4B-AWQ"""
+    """Сервис перевода текста с использованием transformers или vLLM"""
 
     def __init__(
         self,
         model_name: str = "Qwen/Qwen2-4B-Instruct",
-        target_language: str = "English",
+        target_language: str = "Russian",
         logger: logging.Logger = None,
         use_gpu: bool = True,
         max_tokens: int = 512,
+        use_vllm: bool = False,  # Отключаем vLLM по умолчанию для совместимости
     ):
         """
         Args:
@@ -22,19 +23,22 @@ class TranslationService:
             logger: Logger instance
             use_gpu: Использовать GPU
             max_tokens: Максимальное количество токенов для ответа
+            use_vllm: Использовать vLLM (может не работать на Windows)
         """
         self.logger = logger or logging.getLogger(__name__)
         self.model_name = model_name
         self.target_language = target_language
         self.use_gpu = use_gpu
         self.max_tokens = max_tokens
+        self.use_vllm = use_vllm
 
         self.model = None
+        self.tokenizer = None
         self.llm = None
         self._initialized = False
         self._init_lock = threading.Lock()
 
-        self.logger.info(f"TranslationService initialized (model: {model_name})")
+        self.logger.info(f"TranslationService initialized (model: {model_name}, vLLM: {use_vllm})")
 
     def _lazy_init(self):
         """Ленивая инициализация модели"""
@@ -46,23 +50,57 @@ class TranslationService:
                 return
 
             try:
-                from vllm import LLM, SamplingParams
+                if self.use_vllm:
+                    # Попытка использовать vLLM
+                    from vllm import LLM, SamplingParams
 
-                self.logger.info(f"Loading model {self.model_name}...")
-                self.llm = LLM(
-                    model=self.model_name,
-                    quantization="awq" if "AWQ" in self.model_name else None,
-                    gpu_memory_utilization=0.9 if self.use_gpu else 0.0,
-                    device="auto" if self.use_gpu else "cpu",
-                    dtype="auto",
-                )
+                    self.logger.info(f"Loading model {self.model_name} with vLLM...")
+                    self.llm = LLM(
+                        model=self.model_name,
+                        quantization="awq" if "AWQ" in self.model_name else None,
+                        gpu_memory_utilization=0.9 if self.use_gpu else 0.0,
+                        device="auto" if self.use_gpu else "cpu",
+                        dtype="auto",
+                    )
+                    self._backend = "vllm"
+                elif self.model_name == "stub":
+                    # Заглушка для тестирования
+                    self.logger.info("Using stub translation service for testing")
+                    self._backend = "stub"
+                else:
+                    # Использование transformers напрямую
+                    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+                    import torch
+
+                    self.logger.info(f"Loading translation model {self.model_name} with transformers...")
+
+                    device = "cuda" if self.use_gpu and torch.cuda.is_available() else "cpu"
+                    self.logger.info(f"Using device: {device}")
+
+                    self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+                    self.model = AutoModelForSeq2SeqLM.from_pretrained(
+                        self.model_name,
+                        torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+                        device_map="auto" if device == "cuda" else None,
+                        low_cpu_mem_usage=True,
+                    )
+
+                    if device == "cpu":
+                        self.model.to(device)
+
+                    self._backend = "transformers-seq2seq"
+
                 self._initialized = True
-                self.logger.info("Translation model loaded successfully")
-            except ImportError:
-                self.logger.error(
-                    "vLLM not installed. Install: pip install vllm"
-                )
-                raise
+                self.logger.info(f"Translation model loaded successfully (backend: {self._backend})")
+
+            except ImportError as e:
+                if "vllm" in str(e):
+                    self.logger.warning("vLLM not available, falling back to transformers")
+                    self.use_vllm = False
+                    return self._lazy_init()  # Рекурсивный вызов с transformers
+                else:
+                    self.logger.error(f"Import error: {e}")
+                    raise
             except Exception as e:
                 self.logger.exception(f"Error loading translation model: {e}")
                 raise
@@ -70,7 +108,7 @@ class TranslationService:
     def translate(
         self,
         text: str,
-        source_language: str = "Russian",
+        source_language: str = "English",
         target_language: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
@@ -100,8 +138,6 @@ class TranslationService:
         self._lazy_init()
 
         try:
-            from vllm import SamplingParams
-
             t0 = time.perf_counter()
 
             # Формируем промпт для перевода
@@ -109,24 +145,39 @@ class TranslationService:
                 text, source_language, target_language
             )
 
-            # Параметры выборки
-            sampling_params = SamplingParams(
-                temperature=0.3,
-                top_p=0.95,
-                max_tokens=self.max_tokens,
-            )
+            if self._backend == "vllm":
+                # Использование vLLM
+                from vllm import SamplingParams
 
-            # Запускаем инференс
-            outputs = self.llm.generate([prompt], sampling_params)
+                sampling_params = SamplingParams(
+                    temperature=0.3,
+                    top_p=0.95,
+                    max_tokens=self.max_tokens,
+                )
 
-            infer_time = time.perf_counter() - t0
+                outputs = self.llm.generate([prompt], sampling_params)
+                infer_time = time.perf_counter() - t0
 
-            # Извлекаем результат
-            translated_text = outputs[0].outputs[0].text.strip()
-            tokens_used = outputs[0].metrics.finish_reason if hasattr(outputs[0], 'metrics') else 0
+                translated_text = outputs[0].outputs[0].text.strip()
+                tokens_used = len(outputs[0].outputs[0].token_ids) if hasattr(outputs[0].outputs[0], 'token_ids') else 0
+
+            elif self._backend == "stub":
+                # Заглушка - просто возвращаем текст с префиксом [STUB]
+                infer_time = time.perf_counter() - t0
+                translated_text = f"[STUB] {text}"
+                tokens_used = len(text.split())
+
+            elif self._backend.startswith("transformers"):
+                # Использование transformers напрямую
+                if self._backend == "transformers-seq2seq":
+                    # Seq2seq модель - переводим напрямую
+                    translated_text, tokens_used, infer_time = self._translate_with_seq2seq(text, t0)
+                else:
+                    # Causal LM модель - используем промпт
+                    translated_text, tokens_used, infer_time = self._translate_with_causal_lm(prompt, t0)
 
             self.logger.debug(
-                f"Translation completed in {infer_time:.2f}s: {text[:50]}... -> {translated_text[:50]}..."
+                f"Translation completed in {infer_time:.2f}s (backend: {self._backend}): {text[:50]}... -> {translated_text[:50]}..."
             )
 
             return {
@@ -135,6 +186,7 @@ class TranslationService:
                 "tokens_used": tokens_used,
                 "source_language": source_language,
                 "target_language": target_language,
+                "backend": self._backend,
             }
 
         except Exception as e:
@@ -144,7 +196,57 @@ class TranslationService:
                 "infer_time": 0.0,
                 "tokens_used": 0,
                 "error": str(e),
+                "source_language": source_language,
+                "target_language": target_language,
+                "backend": self._backend if hasattr(self, '_backend') else "unknown",
             }
+
+    def _translate_with_seq2seq(self, text: str, t0: float) -> tuple[str, int, float]:
+        """Перевод с использованием seq2seq модели"""
+        import torch
+
+        inputs = self.tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
+        if self.use_gpu and torch.cuda.is_available():
+            inputs = {k: v.cuda() for k, v in inputs.items()}
+
+        with torch.no_grad():
+            outputs = self.model.generate(
+                **inputs,
+                max_new_tokens=self.max_tokens,
+                num_beams=4,
+                early_stopping=True,
+            )
+
+        infer_time = time.perf_counter() - t0
+        translated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
+        tokens_used = len(outputs[0])
+
+        return translated_text, tokens_used, infer_time
+
+    def _translate_with_causal_lm(self, prompt: str, t0: float) -> tuple[str, int, float]:
+        """Перевод с использованием causal language model"""
+        import torch
+
+        inputs = self.tokenizer(prompt, return_tensors="pt")
+        if self.use_gpu and torch.cuda.is_available():
+            inputs = {k: v.cuda() for k, v in inputs.items()}
+
+        with torch.no_grad():
+            outputs = self.model.generate(
+                **inputs,
+                max_new_tokens=self.max_tokens,
+                temperature=0.3,
+                top_p=0.95,
+                do_sample=True,
+                pad_token_id=self.tokenizer.eos_token_id,
+            )
+
+        infer_time = time.perf_counter() - t0
+        generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        translated_text = generated_text[len(prompt):].strip()
+        tokens_used = len(outputs[0])
+
+        return translated_text, tokens_used, infer_time
 
     @staticmethod
     def _build_translation_prompt(
