@@ -1,0 +1,54 @@
+# SoundBE Configuration File
+# Формат: KEY=VALUE
+# Пустые строки и строки с '#' игнорируются
+
+# ============================================
+# ASR (Automatic Speech Recognition) Settings
+# ============================================
+# Модель Whisper (tiny, base, small, medium, large)
+WHISPER_MODEL=base
+
+# Язык распознавания (en, ru, es, fr, de, zh, и т.д.)
+WHISPER_LANGUAGE=en
+
+# Использовать FP16 для Whisper (0 или 1)
+WHISPER_FP16=0
+
+# ============================================
+# Translation Settings
+# ============================================
+# Включить перевод текста (1 или 0)
+TRANSLATION_ENABLED=1
+
+# Модель перевода (Qwen2-4B-Instruct, Qwen2-7B и т.д.)
+TRANSLATION_MODEL=Qwen/Qwen2-4B-Instruct
+
+# Целевой язык для перевода
+TARGET_LANGUAGE=English
+
+# ============================================
+# Text-to-Speech Settings
+# ============================================
+# Включить озвучку (1 или 0)
+TTS_ENABLED=1
+
+# Язык TTS (en, ru и т.д.)
+TTS_LANGUAGE=en
+
+# ============================================
+# Logging Settings
+# ============================================
+# Уровень логирования (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+LOG_LEVEL=INFO
+
+# Файл для логов
+LOG_FILE=soundbe.log
+
+# ============================================
+# UI Settings
+# ============================================
+# Порт веб-интерфейса
+UI_PORT=8000
+
+# Запустить UI в режиме отладки
+UI_DEBUG=0

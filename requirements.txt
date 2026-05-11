@@ -1,6 +1,23 @@
 git+https://github.com/About-to-break/toolbox.git
 
+# Audio & Speech Recognition
 sounddevice~=0.5.3
 numpy~=2.3.5
-pyfiglet~=1.0.4
 whisper~=1.1.10
+
+# UI & Web
+eel~=0.17.0
+
+# Translation & LLM
+vllm~=0.6.0
+torch~=2.2.0
+transformers~=4.40.0
+langdetect~=1.0.9
+
+# Text-to-Speech
+pyttsx3~=2.90
+soundfile~=0.12.1
+librosa~=0.10.0
+
+# Utilities
+pyfiglet~=1.0.4

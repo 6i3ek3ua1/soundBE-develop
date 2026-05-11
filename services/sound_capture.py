@@ -11,6 +11,7 @@ class SoundCapturer:
         self,
         logger: logging.Logger,
         asr=None,
+        event_bus=None,
         sample_rate: int = 16000,
         block_size: int = 1024,
         chunk_seconds: float = 2.0,
@@ -23,6 +24,7 @@ class SoundCapturer:
         self.chunk_overlap_seconds = chunk_overlap_seconds
 
         self.asr = asr
+        self.event_bus = event_bus
         self.l = logger
         self.channels = 1
         self.running = False
@@ -109,6 +111,22 @@ class SoundCapturer:
 
             if text:
                 self.l.info("ASR: %s", text)
+
+                # Публикуем событие распознавания текста
+                if self.event_bus is not None:
+                    from services.event_bus import Event, EventType
+                    self.event_bus.publish(
+                        Event(
+                            type=EventType.TEXT_RECOGNIZED,
+                            data={
+                                "text": text,
+                                "infer_time": infer_s,
+                                "total_time": total_s,
+                                "rtf": rtf,
+                            },
+                            source="sound_capturer",
+                        )
+                    )
 
             self.l.info("ASR metrics: infer=%.3fs total=%.3fs RTF=%.3f", infer_s, total_s, rtf)
 

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoundBE - Системa распознавания и перевода речи</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎤 SoundBE</h1>
+            <p class="subtitle">Системa распознавания и перевода речи в реальном времени</p>
+        </header>
+
+        <main>
+            <section class="controls">
+                <div class="control-group">
+                    <h2>Управление</h2>
+                    <div class="button-group">
+                        <button id="startBtn" class="btn btn-primary" onclick="startCapture()">▶ Начать</button>
+                        <button id="stopBtn" class="btn btn-danger" onclick="stopCapture()" disabled>⏹ Остановить</button>
+                        <button id="settingsBtn" class="btn btn-secondary" onclick="toggleSettings()">⚙ Настройки</button>
+                    </div>
+                </div>
+
+                <div id="settingsPanel" class="settings-panel hidden">
+                    <h3>Настройки</h3>
+                    <div class="setting-item">
+                        <label for="deviceSelect">Устройство захвата:</label>
+                        <select id="deviceSelect">
+                            <option value="">Выбрать устройство...</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="translateToggle">
+                            <input type="checkbox" id="translateToggle" checked>
+                            Включить перевод
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label for="targetLangSelect">Целевой язык:</label>
+                        <select id="targetLangSelect">
+                            <option value="English">Английский</option>
+                            <option value="Russian">Русский</option>
+                            <option value="Spanish">Испанский</option>
+                            <option value="French">Французский</option>
+                            <option value="German">Немецкий</option>
+                            <option value="Chinese">Китайский</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="ttsToggle">
+                            <input type="checkbox" id="ttsToggle" checked>
+                            Включить озвучку
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <section class="status">
+                <h2>Статус системы</h2>
+                <div class="status-item">
+                    <span class="label">Статус:</span>
+                    <span id="statusIndicator" class="status-indicator stopped">⚫ Остановлена</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Модель ASR:</span>
+                    <span id="asrModel" class="value">-</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Модель перевода:</span>
+                    <span id="translationModel" class="value">-</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Последняя ошибка:</span>
+                    <span id="errorMessage" class="value">-</span>
+                </div>
+            </section>
+
+            <section class="results">
+                <h2>Результаты обработки</h2>
+
+                <div class="result-pane">
+                    <div class="pane-title">
+                        <h3>Распознанный текст (ASR)</h3>
+                        <span id="asrTime" class="time-badge">-</span>
+                    </div>
+                    <div id="recognizedText" class="result-content">
+                        <p class="placeholder">Здесь будет отображаться распознанный текст...</p>
+                    </div>
+                </div>
+
+                <div class="result-pane">
+                    <div class="pane-title">
+                        <h3>Переведённый текст</h3>
+                        <span id="translationTime" class="time-badge">-</span>
+                    </div>
+                    <div id="translatedText" class="result-content">
+                        <p class="placeholder">Здесь будет отображаться переведённый текст...</p>
+                    </div>
+                </div>
+
+                <div class="result-pane">
+                    <div class="pane-title">
+                        <h3>История</h3>
+                        <button id="clearHistoryBtn" class="btn btn-small" onclick="clearHistory()">Очистить</button>
+                    </div>
+                    <div id="historyList" class="history-list">
+                        <p class="placeholder">История пуста</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>SoundBE © 2026 | Локальная система распознавания и перевода речи</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
