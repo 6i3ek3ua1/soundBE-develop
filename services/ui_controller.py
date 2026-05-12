@@ -50,6 +50,7 @@ class UIController:
             self.eel.expose(self.stop_capture)
             self.eel.expose(self.get_system_status)
             self.eel.expose(self.get_audio_devices)
+            self.eel.expose(self.update_runtime_settings)
 
             self.logger.info("Eel setup completed")
 
@@ -110,7 +111,14 @@ class UIController:
 
     # Python функции, вызываемые из JavaScript
 
-    def start_capture(self, device_idx: Optional[int] = None):
+    def start_capture(
+        self,
+        device_idx: Optional[int] = None,
+        translation_enabled: Optional[bool] = None,
+        tts_enabled: Optional[bool] = None,
+        recognition_language: Optional[str] = None,
+        target_language: Optional[str] = None,
+    ):
         """Запустить захват аудио"""
         logging.info(f"start_capture() called with device_idx: {device_idx}")
         if self.orchestrator is None:
@@ -118,6 +126,25 @@ class UIController:
             return False
 
         try:
+            if self.orchestrator.running:
+                logging.info("Capture is already running")
+                return True
+
+            if device_idx is None:
+                logging.error("No audio device selected")
+                return False
+
+            self.orchestrator.configure_runtime(
+                translation_enabled=translation_enabled,
+                tts_enabled=tts_enabled,
+                recognition_language=recognition_language,
+                target_language=target_language,
+            )
+            if not self.orchestrator.models_ready:
+                self.orchestrator.prepare_models_async()
+                logging.info("Models are not ready yet")
+                return False
+
             threading.Thread(
                 target=self.orchestrator.start,
                 args=(device_idx,),
@@ -145,13 +172,45 @@ class UIController:
             logging.exception(f"Error stopping capture: {e}")
             return False
 
+    def update_runtime_settings(
+        self,
+        translation_enabled: Optional[bool] = None,
+        tts_enabled: Optional[bool] = None,
+        recognition_language: Optional[str] = None,
+        target_language: Optional[str] = None,
+    ):
+        """Update runtime options from the UI."""
+        if self.orchestrator is None:
+            logging.error("Orchestrator not available")
+            return False
+
+        try:
+            self.orchestrator.configure_runtime(
+                translation_enabled=translation_enabled,
+                tts_enabled=tts_enabled,
+                recognition_language=recognition_language,
+                target_language=target_language,
+            )
+            return True
+        except Exception as e:
+            logging.exception(f"Error updating runtime settings: {e}")
+            return False
+
     def get_system_status(self) -> Dict[str, Any]:
         """Получить статус системы"""
         if self.orchestrator is None:
             return {
                 "running": False,
                 "asr_model": "unknown",
+                "recognition_language": "",
+                "recognition_language_name": "the detected language",
                 "translation_enabled": False,
+                "target_language": "English",
+                "tts_enabled": False,
+                "models_ready": False,
+                "models_loading": False,
+                "models_status": "error",
+                "models_error": "Orchestrator not available",
             }
 
         try:
@@ -164,22 +223,27 @@ class UIController:
             }
 
     @staticmethod
-    def get_audio_devices() -> List[str]:
+    def get_audio_devices() -> List[Dict[str, Any]]:
         """Получить список аудиоустройств"""
         logging.info("get_audio_devices() called")
         try:
             devices = sd.query_devices()
             logging.info(f"Found {len(devices)} audio devices")
-            device_names = []
+            input_devices = []
 
             for idx, dev in enumerate(devices):
                 if dev["max_input_channels"] > 0:
-                    device_name = f"{idx}: {dev['name']} ({dev['max_input_channels']}ch)"
-                    device_names.append(device_name)
-                    logging.debug(f"Device {idx}: {device_name}")
+                    input_device = {
+                        "id": idx,
+                        "name": dev["name"],
+                        "channels": dev["max_input_channels"],
+                        "label": f"{idx}: {dev['name']} ({dev['max_input_channels']}ch)",
+                    }
+                    input_devices.append(input_device)
+                    logging.debug(f"Device {idx}: {input_device['label']}")
 
-            logging.info(f"Returning {len(device_names)} input devices")
-            return device_names
+            logging.info(f"Returning {len(input_devices)} input devices")
+            return input_devices
 
         except Exception as e:
             logging.error(f"Error querying devices: {e}")
@@ -195,10 +259,16 @@ class UIController:
             self._setup_eel()
             self._subscribe_to_events()
 
-            self.logger.info(f"Starting Eel UI on port {port}...")
+            host = os.getenv("EEL_HOST", "localhost")
+            mode = os.getenv("EEL_MODE", "chrome-app")
+            if mode.lower() in ("", "none", "false", "off"):
+                mode = None
+
+            self.logger.info(f"Starting Eel UI on {host}:{port}...")
             self.eel.start(
                 "index.html",
-                mode="chrome-app",
+                mode=mode,
+                host=host,
                 port=port,
             )
 

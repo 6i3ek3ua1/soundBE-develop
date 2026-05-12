@@ -1,0 +1,29 @@
+services:
+  soundbe:
+    build:
+      context: .
+    image: soundbe:local
+    ports:
+      - "${UI_PORT:-8000}:8000"
+    environment:
+      UI_PORT: "8000"
+      EEL_HOST: "0.0.0.0"
+      EEL_MODE: "none"
+      LOG_LEVEL: "INFO"
+      LOG_FILE: "/app/logs/soundbe.log"
+      WHISPER_MODEL: "${WHISPER_MODEL:-base}"
+      WHISPER_LANGUAGE: "${WHISPER_LANGUAGE:-en}"
+      WHISPER_FP16: "0"
+      TRANSLATION_ENABLED: "${TRANSLATION_ENABLED:-0}"
+      TRANSLATION_MODEL: "${TRANSLATION_MODEL:-Qwen/Qwen2.5-1.5B-Instruct}"
+      TARGET_LANGUAGE: "${TARGET_LANGUAGE:-English}"
+      PRELOAD_MODELS: "${PRELOAD_MODELS:-1}"
+      TTS_ENABLED: "${TTS_ENABLED:-0}"
+      USE_VLLM: "false"
+    volumes:
+      - ./logs:/app/logs
+      - soundbe-cache:/app/.cache
+    restart: unless-stopped
+
+volumes:
+  soundbe-cache:

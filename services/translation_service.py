@@ -40,6 +40,14 @@ class TranslationService:
 
         self.logger.info(f"TranslationService initialized (model: {model_name}, vLLM: {use_vllm})")
 
+    @property
+    def is_ready(self) -> bool:
+        return self._initialized
+
+    def ensure_ready(self):
+        """Download/load the translation model if it is not ready yet."""
+        self._lazy_init()
+
     def _lazy_init(self):
         """Ленивая инициализация модели"""
         if self._initialized:
@@ -69,7 +77,7 @@ class TranslationService:
                     self._backend = "stub"
                 else:
                     # Использование transformers напрямую
-                    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+                    from transformers import AutoConfig, AutoTokenizer, AutoModelForCausalLM, AutoModelForSeq2SeqLM
                     import torch
 
                     self.logger.info(f"Loading translation model {self.model_name} with transformers...")
@@ -77,18 +85,25 @@ class TranslationService:
                     device = "cuda" if self.use_gpu and torch.cuda.is_available() else "cpu"
                     self.logger.info(f"Using device: {device}")
 
-                    self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-                    self.model = AutoModelForSeq2SeqLM.from_pretrained(
+                    config = AutoConfig.from_pretrained(self.model_name, trust_remote_code=True)
+                    self.tokenizer = AutoTokenizer.from_pretrained(
+                        self.model_name,
+                        trust_remote_code=True,
+                    )
+
+                    model_class = AutoModelForSeq2SeqLM if getattr(config, "is_encoder_decoder", False) else AutoModelForCausalLM
+                    self.model = model_class.from_pretrained(
                         self.model_name,
                         torch_dtype=torch.float16 if device == "cuda" else torch.float32,
                         device_map="auto" if device == "cuda" else None,
                         low_cpu_mem_usage=True,
+                        trust_remote_code=True,
                     )
 
                     if device == "cpu":
                         self.model.to(device)
 
-                    self._backend = "transformers-seq2seq"
+                    self._backend = "transformers-seq2seq" if getattr(config, "is_encoder_decoder", False) else "transformers-causal"
 
                 self._initialized = True
                 self.logger.info(f"Translation model loaded successfully (backend: {self._backend})")
@@ -171,7 +186,7 @@ class TranslationService:
                 # Использование transformers напрямую
                 if self._backend == "transformers-seq2seq":
                     # Seq2seq модель - переводим напрямую
-                    translated_text, tokens_used, infer_time = self._translate_with_seq2seq(text, t0)
+                    translated_text, tokens_used, infer_time = self._translate_with_seq2seq(prompt, t0)
                 else:
                     # Causal LM модель - используем промпт
                     translated_text, tokens_used, infer_time = self._translate_with_causal_lm(prompt, t0)
@@ -227,7 +242,23 @@ class TranslationService:
         """Перевод с использованием causal language model"""
         import torch
 
-        inputs = self.tokenizer(prompt, return_tensors="pt")
+        if hasattr(self.tokenizer, "apply_chat_template") and self.tokenizer.chat_template:
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You are a precise translation engine. Return only the translated text.",
+                },
+                {"role": "user", "content": prompt},
+            ]
+            model_input = self.tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+            )
+        else:
+            model_input = prompt
+
+        inputs = self.tokenizer(model_input, return_tensors="pt")
         if self.use_gpu and torch.cuda.is_available():
             inputs = {k: v.cuda() for k, v in inputs.items()}
 
@@ -242,8 +273,8 @@ class TranslationService:
             )
 
         infer_time = time.perf_counter() - t0
-        generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        translated_text = generated_text[len(prompt):].strip()
+        generated_tokens = outputs[0][inputs["input_ids"].shape[-1]:]
+        translated_text = self.tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
         tokens_used = len(outputs[0])
 
         return translated_text, tokens_used, infer_time

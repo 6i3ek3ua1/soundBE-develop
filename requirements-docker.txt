@@ -1,0 +1,23 @@
+git+https://github.com/About-to-break/toolbox.git
+
+# Audio and speech recognition
+sounddevice~=0.5.3
+numpy<2
+openai-whisper==20231117
+
+# UI and web
+eel~=0.17.0
+
+# Translation and LLM. vLLM is intentionally not installed in the default
+# Docker image; enable it in a custom GPU image if USE_VLLM=true is needed.
+accelerate>=0.26.0
+transformers>=4.45.0
+langdetect~=1.0.9
+
+# Text-to-speech
+pyttsx3~=2.90
+soundfile~=0.12.1
+librosa~=0.10.0
+
+# Utilities
+pyfiglet~=1.0.4

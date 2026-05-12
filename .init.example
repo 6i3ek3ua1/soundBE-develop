@@ -20,11 +20,14 @@ WHISPER_FP16=0
 # Включить перевод текста (1 или 0)
 TRANSLATION_ENABLED=1
 
-# Модель перевода (Qwen2-4B-Instruct, Qwen2-7B и т.д.)
-TRANSLATION_MODEL=Qwen/Qwen2-4B-Instruct
+# Модель перевода (Qwen2.5-1.5B-Instruct, Qwen2-7B-Instruct и т.д.)
+TRANSLATION_MODEL=Qwen/Qwen2.5-1.5B-Instruct
 
 # Целевой язык для перевода
 TARGET_LANGUAGE=English
+
+# Скачать/загрузить модели заранее перед стартом захвата (1 или 0)
+PRELOAD_MODELS=1
 
 # ============================================
 # Text-to-Speech Settings

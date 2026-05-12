@@ -10,6 +10,7 @@ class WhisperASR:
 
         self.model_name = model_name
         self.language = language
+        self.last_detected_language = language
         self.fp16 = fp16
         self.model = whisper.load_model(model_name)
 
@@ -29,6 +30,7 @@ class WhisperASR:
         )
 
         infer_s = time.perf_counter() - t0
+        self.last_detected_language = result.get("language") or self.language
         text = (result.get("text") or "").strip()
         return text, infer_s
 

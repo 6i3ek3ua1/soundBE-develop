@@ -1,0 +1,14 @@
+.git
+.venv
+__pycache__
+*.py[cod]
+*.log
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.cache
+downloads
+dist
+build
+*.egg-info
+soundbe.log

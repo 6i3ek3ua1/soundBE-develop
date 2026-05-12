@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SoundBE - Системa распознавания и перевода речи</title>
+    <title>SoundBE - распознавание и перевод речи</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🎤 SoundBE</h1>
-            <p class="subtitle">Системa распознавания и перевода речи в реальном времени</p>
+            <p class="subtitle">Система распознавания и перевода речи в реальном времени</p>
         </header>
 
         <main>
@@ -26,20 +26,36 @@
 
                 <div id="settingsPanel" class="settings-panel hidden">
                     <h3>Настройки</h3>
+
                     <div class="setting-item">
                         <label for="deviceSelect">Устройство захвата:</label>
                         <select id="deviceSelect">
                             <option value="">Выбрать устройство...</option>
                         </select>
                     </div>
+
+                    <div class="setting-item">
+                        <label for="sourceLangSelect">Язык распознавания:</label>
+                        <select id="sourceLangSelect">
+                            <option value="">Автоопределение</option>
+                            <option value="ru">Русский</option>
+                            <option value="en">Английский</option>
+                            <option value="es">Испанский</option>
+                            <option value="fr">Французский</option>
+                            <option value="de">Немецкий</option>
+                            <option value="zh">Китайский</option>
+                        </select>
+                    </div>
+
                     <div class="setting-item">
                         <label for="translateToggle">
                             <input type="checkbox" id="translateToggle" checked>
                             Включить перевод
                         </label>
                     </div>
+
                     <div class="setting-item">
-                        <label for="targetLangSelect">Целевой язык:</label>
+                        <label for="targetLangSelect">Язык перевода:</label>
                         <select id="targetLangSelect">
                             <option value="English">Английский</option>
                             <option value="Russian">Русский</option>
@@ -49,9 +65,10 @@
                             <option value="Chinese">Китайский</option>
                         </select>
                     </div>
+
                     <div class="setting-item">
                         <label for="ttsToggle">
-                            <input type="checkbox" id="ttsToggle" checked>
+                            <input type="checkbox" id="ttsToggle">
                             Включить озвучку
                         </label>
                     </div>
@@ -67,6 +84,14 @@
                 <div class="status-item">
                     <span class="label">Модель ASR:</span>
                     <span id="asrModel" class="value">-</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Язык распознавания:</span>
+                    <span id="recognitionLanguageStatus" class="value">-</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Язык перевода:</span>
+                    <span id="targetLanguageStatus" class="value">-</span>
                 </div>
                 <div class="status-item">
                     <span class="label">Модель перевода:</span>
@@ -93,11 +118,11 @@
 
                 <div class="result-pane">
                     <div class="pane-title">
-                        <h3>Переведённый текст</h3>
+                        <h3>Переведенный текст</h3>
                         <span id="translationTime" class="time-badge">-</span>
                     </div>
                     <div id="translatedText" class="result-content">
-                        <p class="placeholder">Здесь будет отображаться переведённый текст...</p>
+                        <p class="placeholder">Здесь будет отображаться переведенный текст...</p>
                     </div>
                 </div>
 

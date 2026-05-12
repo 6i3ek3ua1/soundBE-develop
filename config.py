@@ -10,7 +10,11 @@ def load_config(init_file=".init") -> SimpleNamespace:
         "LOG_LEVEL": "INFO",
         "UI_PORT": "8000",
         "AUDIO_DEVICE": "",
-        "TRANSLATION_MODEL": "Qwen/Qwen2-4B-Instruct",
+        "WHISPER_LANGUAGE": "en",
+        "TRANSLATION_MODEL": "Qwen/Qwen2.5-1.5B-Instruct",
+        "TARGET_LANGUAGE": "English",
+        "PRELOAD_MODELS": "1",
+        "TTS_ENABLED": "0",
         "TTS_LANGUAGE": "en",
         "USE_VLLM": "false",
     }
@@ -31,9 +35,10 @@ def load_config(init_file=".init") -> SimpleNamespace:
         if key not in config_vars:
             config_vars[key] = default_value
 
+    # Environment variables should win over values from .init. This lets Docker
+    # Compose override runtime settings without rebuilding the image.
     for key, value in os.environ.items():
-        if key not in config_vars:
-            config_vars[key] = value
+        config_vars[key] = value
 
     try:
         log_level_str = config_vars.get("LOG_LEVEL", "INFO").upper()

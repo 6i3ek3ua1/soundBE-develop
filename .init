@@ -10,8 +10,12 @@ UI_PORT=8000
 # ID устройства захвата аудио (пустое значение - запросить вручную)
 AUDIO_DEVICE=
 
-# Модель для перевода (простая заглушка для тестирования)
-TRANSLATION_MODEL=stub
+# Модель для перевода
+TRANSLATION_ENABLED=1
+TRANSLATION_MODEL=Qwen/Qwen2.5-1.5B-Instruct
+TARGET_LANGUAGE=English
+PRELOAD_MODELS=1
+TTS_ENABLED=0
 
 # Язык для синтеза речи
 TTS_LANGUAGE=en

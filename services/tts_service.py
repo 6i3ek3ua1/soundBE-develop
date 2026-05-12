@@ -3,6 +3,7 @@ import threading
 import numpy as np
 from typing import Optional, Dict, Any
 import time
+import librosa
 
 
 class TextToSpeechService:
@@ -106,7 +107,6 @@ class TextToSpeechService:
 
             # Конвертируем в нужную частоту дискретизации если нужно
             if sr != self.sample_rate:
-                import librosa
 
                 audio_data = librosa.resample(
                     audio_data, orig_sr=sr, target_sr=self.sample_rate

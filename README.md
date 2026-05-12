@@ -10,7 +10,7 @@
 
 - 🎙️ **Захват аудио в реальном времени** - работает с любым подключенным микрофоном
 - 🗣️ **Распознавание речи (ASR)** - OpenAI Whisper с поддержкой 99 языков
-- 🌐 **Перевод текста** - Qwen2-4B-Instruct + vLLM (локально!)
+- 🌐 **Перевод текста** - Qwen2.5-1.5B-Instruct / Qwen + vLLM (локально!)
 - 🔊 **Озвучка (TTS)** - pyttsx3 для синтеза речи
 - 💻 **Веб-интерфейс** - красивый UI на Eel с историей переводов
 - 📱 **Адаптивный дизайн** - работает на ПК и мобильных
@@ -43,6 +43,16 @@ pyttsx3 TTS (озвучка)
 
 ## 🚀 Быстрый старт
 
+### Docker
+
+```bash
+docker compose up --build
+```
+
+Затем откройте `http://localhost:8000`.
+
+Подробнее: [doc/DOCKER.md](doc/DOCKER.md).
+
 ### 1. Установка
 
 ```bash
@@ -71,7 +81,7 @@ cp .init.example .init
 # Редактируем под свои нужды
 # Основные параметры:
 # - WHISPER_MODEL: base (рекомендуется), tiny, small, medium, large
-# - TRANSLATION_MODEL: Qwen/Qwen2-4B-Instruct
+# - TRANSLATION_MODEL: Qwen/Qwen2.5-1.5B-Instruct
 # - TARGET_LANGUAGE: English, Russian, Spanish и т.д.
 ```
 
@@ -93,7 +103,7 @@ python main.py --ui-port 8080
 
 При первом запуске загружаются модели (~3-4GB):
 - OpenAI Whisper (base - 74MB)
-- Qwen2-4B-Instruct (~9GB)
+- Qwen2.5-1.5B-Instruct (~3-4GB)
 
 После загрузки откроется веб-интерфейс на `http://localhost:8000`
 
@@ -130,7 +140,7 @@ WHISPER_FP16=0                  # Использовать FP16
 
 # Перевод
 TRANSLATION_ENABLED=1           # Включить/отключить
-TRANSLATION_MODEL=Qwen/Qwen2-4B-Instruct
+TRANSLATION_MODEL=Qwen/Qwen2.5-1.5B-Instruct
 TARGET_LANGUAGE=English
 
 # TTS (Text-to-Speech)
